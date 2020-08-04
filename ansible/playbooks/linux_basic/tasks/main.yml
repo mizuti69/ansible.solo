@@ -1,0 +1,54 @@
+---
+# First setting playbook
+
+- name: "Confirmation of request package"
+  yum:
+    name: "{{ linux_check_packages }}"
+    state: present
+  tags: linux
+
+- name: "SELinux setting"
+  selinux:
+    policy: targeted
+    state: "{{ linux_selinux_value }}"
+  tags: linux
+
+- name: "Locale setting"
+  shell: 
+    cmd: /usr/bin/localectl set-locale LANG=ja_JP.utf8
+  tags: linux
+
+- name: "Localtime setting"
+  timezone:
+    name: Asia/Tokyo
+  tags: linux
+
+- name: "Hostname setting"
+  hostname:
+    name: "{{ linux_hostname }}"
+  tags: linux
+
+- name: "Sysctl setting"
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-custom.conf
+    reload: yes
+  with_items: "{{ linux_sysctl_params }}"
+  tags: linux
+
+- name: "Systemd log level setting"
+  lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^#LogLevel='
+    line: LogLevel=notice
+  tags: linux
+
+- name: "Disable service"
+  systemd: 
+    name: "{{ item }}"
+    enabled: no
+  with_items: "{{ linux_disable_services }}"
+  ignore_errors: yes
+  tags: linux

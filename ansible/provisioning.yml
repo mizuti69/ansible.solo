@@ -1,0 +1,36 @@
+---
+
+# Main provisioning playbook
+# ---
+# Use by specifying the role you want to execute for each environment  
+# It is specified as an execution playbook, the task to be executed is a role, and the playbooks are read from the role.  
+#
+# name: Execution task name  
+# hosts: Execution target group defined in host file  
+# become: Whether to use `sudo`  
+# roles: The role you want to perform  
+
+## [Production]
+#- name: "OS default Settings"
+#  hosts: production
+#  become: yes
+#  roles:
+#    - init_setting
+
+## [Stage]
+#- name: "OS default Settings"
+#  hosts: stage
+#  become: yes
+#  roles:
+#    - init_setting
+
+## [Develop]
+#- name: "OS default Settings"
+#  hosts: develop
+#  roles:
+#    - dev_setting
+- name: "OS default Settings"
+  become: yes
+  hosts: develop
+  roles:
+    - basic-role

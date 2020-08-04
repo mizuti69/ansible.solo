@@ -1,0 +1,11 @@
+[webservers]
+#devweb01 ansible_ssh_host=127.0.0.1
+#devweb02 ansible_ssh_host=127.0.0.1
+
+[dbservers]
+#devdb01 ansible_ssh_host=127.0.0.1
+#devdb02 ansible_ssh_host=127.0.0.1
+
+[develop:children]
+webservers
+dbservers

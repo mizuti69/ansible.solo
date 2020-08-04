@@ -1,0 +1,11 @@
+[webservers]
+#stweb01 ansible_ssh_host=127.0.0.1
+#stweb02 ansible_ssh_host=127.0.0.1
+
+[dbservers]
+#stdb01 ansible_ssh_host=127.0.0.1
+#stdb02 ansible_ssh_host=127.0.0.1
+
+[stage:children]
+webservers
+dbservers

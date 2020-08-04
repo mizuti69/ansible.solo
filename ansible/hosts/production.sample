@@ -1,0 +1,11 @@
+[webservers]
+#prodweb01 ansible_ssh_host=127.0.0.1
+#prodweb02 ansible_ssh_host=127.0.0.1
+
+[dbservers]
+#proddb01 ansible_ssh_host=127.0.0.1
+#proddb02 ansible_ssh_host=127.0.0.1
+
+[production:children]
+webservers
+dbservers

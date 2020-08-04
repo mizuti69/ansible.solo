@@ -1,0 +1,6 @@
+hosts/develop
+hosts/stage
+hosts/production
+.ssh/*
+ansible.cfg
+*.retry

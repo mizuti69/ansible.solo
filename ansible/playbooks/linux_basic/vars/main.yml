@@ -1,0 +1,24 @@
+---
+# Default vars
+
+linux_check_packages:
+  - libselinux-python
+  - NetworkManager-glib
+  - glibc-langpack-ja
+
+linux_selinux_value: permissive
+
+linux_hostname: "{{ ansible_hostname }}"
+
+linux_sysctl_params:
+  - key: net.ipv4.conf.all.accept_source_route
+    value: 0
+  - key: net.ipv4.conf.default.rp_filter
+    value: 1
+  - key: net.ipv4.tcp_syncookies
+    value: 1
+  - key: net.ipv4.icmp_echo_ignore_broadcasts
+    value: 1
+
+linux_disable_services:
+  - acpid

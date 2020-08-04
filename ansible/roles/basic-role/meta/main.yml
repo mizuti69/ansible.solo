@@ -1,0 +1,5 @@
+---
+# Include playbook tasks
+
+dependencies:
+  - { role: playbooks/linux_basic }
