@@ -1,7 +1,7 @@
 # Playbook linux_basic
 This playbook configures yum and modernizes the OS  
 
-## Tasks overvew
+## Tasks overview
 
 ### Yum cache enable
 enable yum keepcache  

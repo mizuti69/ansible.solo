@@ -43,6 +43,7 @@
     path: /etc/systemd/system.conf
     regexp: '^#LogLevel='
     line: LogLevel=notice
+    backup: yes
   tags: linux
 
 - name: "Disable service"

@@ -1,9 +1,9 @@
-# Playbook linux_basic
+# Playbook centos
 A playbook with basic settings for RedhatELOS7 or CentOS7
 
 Notice: You need to restart the remote server the first time you run the playbook  
 
-## Tasks overvew
+## Tasks overview
 
 ### Confirmation of request package
 Identify and install the packages needed to run the playbook  

@@ -6,6 +6,7 @@
     path: /etc/yum.conf
     regexp: '^keepcache='
     line: keepcache=1
+    backup: yes
   tags: yum
 
 - name: "Add package"
