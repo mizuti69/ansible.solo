@@ -1,0 +1,4 @@
+#!/bin/sh
+if [ ! -e /var/run/anacron.pid ]; then
+    anacron -u cron.monthly
+fi

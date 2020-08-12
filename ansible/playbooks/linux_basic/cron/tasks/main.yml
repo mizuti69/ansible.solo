@@ -1,0 +1,57 @@
+---
+# Cron setting playbook
+
+- name: "Enable cron job"
+  blockinfile:
+    path: /etc/crontab
+    block: |
+      {{ cron_daily }} root run-parts /etc/cron.daily
+      {{ cron_weekly }} root run-parts /etc/cron.weekly
+      {{ cron_monthly }} root run-parts /etc/cron.monthly
+    backup: yes
+  tags: cron
+
+- name: "Disable anacron job"
+  lineinfile:
+    path: /etc/anacrontab
+    regexp: '^START_HOURS_RANGE='
+    line: START_HOURS_RANGE={{ cron_anacron_range }}
+    backup: yes
+  tags: cron
+
+- block: # Change notification destination of job mail
+  - name: "Cron job mail"
+    lineinfile:
+      path: /etc/crontab
+      regexp: '^MAILTO='
+      line: MAILTO={{ cron_mailto }}
+  - name: "Anacron job mail"
+    lineinfile:
+      path: /etc/anacrontab
+      regexp: '^MAILTO='
+      line: MAILTO={{ cron_mailto }}
+  tags: cron
+
+- block: # Add system job for anacron
+  - name: "Add anacron.daily"
+    copy:
+      src: playbooks/linux_basic/cron/files/0anacron_daily
+      dest: /etc/cron.daily/0anacron
+      owner: root
+      group: root
+      mode: 0755
+  - name: "Add anacron.weeekly"
+    copy:
+      src: playbooks/linux_basic/cron/files/0anacron_weekly
+      dest: /etc/cron.weekly/0anacron
+      owner: root
+      group: root
+      mode: 0755
+  - name: "Add anacron.monthly"
+    copy:
+      src: playbooks/linux_basic/cron/files/0anacron_monthly
+      dest: /etc/cron.monthly/0anacron
+      owner: root
+      group: root
+      mode: 0755
+  tags: cron

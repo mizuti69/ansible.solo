@@ -1,0 +1,11 @@
+---
+
+cron_daily: '05 0 * * *'
+
+cron_weekly: '25 0 * * 0'
+
+cron_monthly: '45 0 1 * *'
+
+cron_anacron_range: 5-6
+
+cron_mailto: root
