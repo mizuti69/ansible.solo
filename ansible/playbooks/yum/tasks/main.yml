@@ -1,0 +1,27 @@
+---
+# Yum setting playbook
+
+- name: "Yum cache enable"
+  lineinfile:
+    path: /etc/yum.conf
+    regexp: '^keepcache='
+    line: keepcache=1
+  tags: yum
+
+- name: "Add package"
+  yum: 
+    name: "{{ yum_add_packages }}"
+    state: present
+  ignore_errors: yes
+  tags: yum
+
+- name: "Disable repos"
+  shell: yum-config-manager --disable "{{ yum_disable_repos }}"
+  tags: yum
+
+- name: "Upgrade all"
+  yum: 
+    name: '*' 
+    state: latest
+  when: yum_update == 'yes'
+  tags: yum

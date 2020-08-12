@@ -1,0 +1,14 @@
+---
+
+yum_add_packages: 
+  - yum-utils
+  - vim
+  - bind-utils
+  - git
+  - net-tools
+  - epel-release
+
+yum_disable_repos: 
+  - epel
+
+yum_update: 'yes'
