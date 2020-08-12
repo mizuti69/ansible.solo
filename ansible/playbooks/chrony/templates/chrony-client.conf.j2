@@ -1,0 +1,37 @@
+# client mode
+port 0
+
+# Use public ntp pool service
+{% for items in chrony_servers %}
+server {{items}} prefer iburst minpoll 4 maxpoll 4
+{% endfor %}
+
+{% for items in chrony_ntppools %}
+pool {{items}} iburst
+{% endfor %}
+
+# Record the rate at which the system clock gains/losses time.
+driftfile /var/lib/chrony/drift
+
+# Enable kernel RTC synchronization.
+rtcsync
+
+# Allow the system clock to be stepped in the first three updates
+# if its offset is larger than 1 second.
+makestep 1.0 3
+
+# Allow NTP client access from local network.
+#allow 192.168.0.0/16
+
+# Specify file containing keys for NTP authentication.
+keyfile /etc/chrony.keys
+
+# Specify directory for log files.
+logdir /var/log/chrony
+
+# save data between restarts for fast re-load
+dumponexit
+dumpdir /var/run/chrony
+
+# leap sec
+leapsecmode slew

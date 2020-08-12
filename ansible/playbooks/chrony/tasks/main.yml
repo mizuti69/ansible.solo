@@ -1,0 +1,32 @@
+---
+# Chrony setting playbook
+
+- name: "Install chrony"
+  yum: 
+    name: chrony
+    state: present
+  tags: chrony
+
+- name: "System ntp enabled"
+  command: /usr/bin/timedatectl set-ntp yes
+  tags: chrony
+
+- name: "Chrony configure"
+  template:
+    src: playbooks/chrony/templates/chrony-client.conf.j2
+    dest: /etc/chrony.conf
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
+  notify:
+    - "Restart chronyd"
+  when: chrony_mode == 'client'
+  tags: chrony
+
+- name: "Chrony enabled"
+  systemd:
+    name: chronyd
+    enabled: yes
+    state: started
+  tags: chrony
