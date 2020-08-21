@@ -1,0 +1,397 @@
+---
+
+# Initial settings raspi-config
+- name: "Update all packages to the latest version"
+  apt:
+    name: '*'
+    state: latest
+    force_apt_get: yes
+    update_cache: yes
+  tags: apt
+
+- name: "Add packages" 
+  apt:
+    name: "{{ apt_add_packages }}"
+    state: present
+  tags: apt
+
+# DO NOT use 'rpi-update' as part of a regular update process.
+#- name: "Update farmware"
+#  shell: 
+#    cmd: /usr/bin/rpi-update
+#  tags: debian
+
+- name: "Ensure a locale exists"
+  locale_gen:
+    name: ja_JP.UTF-8
+    state: present
+  tags: debian
+
+- name: "Locale setting"
+  shell: |
+    /usr/sbin/update-locale LANG=ja_JP.UTF-8
+    /usr/bin/localectl set-keymap jp106
+  tags: debian
+
+- name: "Set timezone to Asia/Tokyo"
+  file:
+    src: /usr/share/zoneinfo/Asia/Tokyo
+    dest: /etc/localtime
+    owner: root
+    group: root
+    state: link
+    force: yes
+  tags: debian
+
+- name: "Hostname setting"
+  hostname:
+    name: "{{ debian_hostname }}"
+  tags: debian
+
+- name: "Systemd log level setting"
+  lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^#LogLevel='
+    line: LogLevel=notice
+    backup: yes
+  tags: debian
+
+# users
+- name: "Add user groups"
+  group: 
+    name: "{{ item.name }}"
+    gid: "{{ item.gid }}"
+    state: present
+  with_items: "{{ os_groups }}"
+  tags: account
+
+- name: "Add users"
+  user:
+    name: "{{ item.0.name }}"
+    password: "{{ item.0.password }}"
+    uid: "{{ item.0.uid }}"
+    group: "{{ item.0.gid }}"
+    groups: "{{ item.1 }}"
+    move_home: yes
+    home: /home/{{ item.0.name }}
+    state: present
+    update_password: on_create
+  with_subelements:
+    - "{{ os_users }}"
+    - sgid
+  tags: account
+
+- name: "chanege user password"
+  user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    update_password: on_create
+  with_items: "{{ user_update_password }}"
+  tags: account
+
+- name: "Sudo custom"
+  copy:
+    src: playbooks/linux_basic/raspbian/files/099_sudo_custom
+    dest: /etc/sudoers.d/099_sudo_custom
+    owner: root
+    group: root
+    mode: 0440
+    follow: yes
+    validate: 'visudo -cf %s'
+  tags: account
+
+# firewall
+## default policy
+- name: "Iptables flush"
+  iptables:
+    chain: "{{ item }}"
+    flush: yes
+  with_items: [ 'INPUT', 'FORWARD', 'OUTPUT' ]
+  tags: fw
+
+- name:
+  iptables:
+    chain: "{{ item }}"
+    ctstate: [ 'ESTABLISHED', 'RELATED' ]
+    jump: ACCEPT
+  with_items: [ 'INPUT', 'OUTPUT' ]
+  tags: fw
+
+- name: "Accept loopback from"
+  iptables:
+    chain: "{{ item }}"
+    ip_version: ipv4
+    source: 127.0.0.1
+    jump: ACCEPT
+  with_items: [ 'INPUT', 'OUTPUT' ]
+  tags: fw
+
+- name: "Accept loopback to"
+  iptables:
+    chain: "{{ item }}"
+    ip_version: ipv4
+    destination: 127.0.0.1
+    jump: ACCEPT
+  with_items: [ 'INPUT', 'OUTPUT' ]
+  tags: fw
+
+- name: "Input icmp from"
+  iptables:
+    chain: INPUT
+    protocol: icmp
+    jump: ACCEPT
+  tags: fw
+
+- name: "Accept local network all"
+  iptables:
+    chain: "{{ item }}"
+    ip_version: ipv4
+    source: "{{ fw_accept_all_local }}"
+    jump: ACCEPT
+  with_items: [ 'INPUT', 'OUTPUT' ]
+  tags: fw
+
+## service policy
+- name: "Accept ssh from"
+  iptables:
+    chain: "{{ item }}"
+    ip_version: ipv4
+    protocol: tcp
+    destination_port: 22
+    ctstate: NEW
+    jump: ACCEPT
+  with_items: [ 'INPUT', 'OUTPUT' ]
+  tags: fw
+
+- name: "Accept output ipv4 tcp ports"
+  iptables:
+    chain: OUTPUT
+    ip_version: ipv4
+    protocol: tcp
+    destination_port: "{{ item }}"
+    ctstate: NEW
+    jump: ACCEPT
+  with_items: "{{ fw_accept_out_tcp_ports }}"
+  tags: fw
+
+- name: "Accept output ipv4 udp ports"
+  iptables:
+    chain: OUTPUT
+    ip_version: ipv4
+    protocol: udp
+    destination_port: "{{ item }}"
+    jump: ACCEPT
+  with_items: "{{ fw_accept_out_udp_ports }}"
+  tags: fw
+
+## drop policy
+- name: "Drop all policy ipv4"
+  iptables:
+    chain: "{{ item }}"
+    ip_version: ipv4
+    jump: DROP
+  with_items: [ 'INPUT','FORWARD', 'OUTPUT' ]
+  tags: fw
+
+- name: "Drop all policy ipv6"
+  iptables:
+    chain: "{{ item }}"
+    ip_version: ipv6
+    jump: DROP
+  with_items: [ 'INPUT', 'FORWARD', 'OUTPUT' ]
+  tags: fw
+
+# wifi
+- name: "Copy awscli config"
+  copy:
+    src: playbooks/linux_basic/raspbian/files/wpa_supplicant.conf
+    dest: /etc/wpa_supplicant/wpa_supplicant.conf
+    backup: yes
+    owner: root
+    group: root
+    mode: 0600
+    follow: yes
+  tags: wifi
+
+# ntp
+- name: "Set ntp server"
+  lineinfile:
+    path: /etc/systemd/timesyncd.conf
+    regexp: '^#NTP='
+    line: NTP={{ ntp_servers }}
+    backup: yes
+  tags: ntp
+  notify: 
+    - "Restart timesyncd"
+
+- name: "Set fallback ntp server"
+  lineinfile:
+    path: /etc/systemd/timesyncd.conf
+    regexp: '^#FallbackNTP='
+    line: FallbackNTP={{ ntp_pools }}
+    backup: yes
+  tags: ntp
+  notify: 
+    - "Restart timesyncd"
+
+# ssh
+- name: "Ssh basic setting"
+  blockinfile:
+    path: /etc/ssh/sshd_config
+    block:  |
+      AllowGroups {{ ssh_allow_group }}
+    backup: yes
+    #validate: /usr/sbin/sshd -t
+  tags: ssh
+
+- name: "Ssh PermitRootLogin no"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#PermitRootLogin prohibit-password'
+    line: 'PermitRootLogin no'
+    backup: yes
+  tags: ssh
+
+- name: "Start ssh"
+  systemd: 
+    name: sshd
+    state: started
+    enabled: yes
+  tags: ssh
+
+# monit
+- name: "Start monitd"
+  systemd: 
+    name: monit
+    state: started
+    enabled: yes
+  tags: monit
+
+# AWS cli
+- name: "check credential"
+  stat: 
+    path: /root/.aws/credentials
+  register: root_credential
+  tags: aws
+
+- block:
+  - name: "Create root credential dir"
+    file: 
+      path: /root/.aws
+      state: directory
+      owner: root
+      group: root
+  - name: "Copy awscli config"
+    copy:
+      src: playbooks/linux_basic/raspbian/files/awscli_config
+      dest: /root/.aws/config
+      owner: root
+      group: root
+      mode: 0600
+      backup: yes
+  - name: "Copy awscli credentials"
+    copy:
+      src: playbooks/linux_basic/raspbian/files/awscli_credentials
+      dest: /root/.aws/credentials
+      owner: root
+      group: root
+      mode: 0600
+      backup: yes
+  tags: aws
+  when: not root_credential.stat.exists
+
+- name: "check credential user"
+  stat: 
+    path: /home/{{ aws_config_user }}/.aws/credentials
+  register: user_credential
+  tags: aws
+- block:
+  - name: "Create user credential dir" 
+    file: 
+      path: /home/{{ aws_config_user }}/.aws
+      state: directory
+      owner: "{{ aws_config_user }}"
+  - name: "Copy awscli config user"
+    copy:
+      src: playbooks/linux_basic/raspbian/files/awscli_config
+      dest: /home/{{ aws_config_user }}/.aws/config
+      owner: "{{ aws_config_user }}"
+      mode: 0600
+      backup: yes
+  - name: "Copy awscli user credentials"
+    copy:
+      src: playbooks/linux_basic/raspbian/files/{{ aws_credential_user }}
+      dest: /home/{{ aws_config_user }}/.aws/credentials
+      owner: "{{ aws_config_user }}"
+      mode: 0600
+      backup: yes
+  tags: aws
+  when: not user_credential.stat.exists
+
+# AWS IoT Core
+- name: "check cdk"
+  stat: 
+    path: /usr/local/lib/python3.7/dist-packages/AWSIoTPythonSDK
+  register: check_cdk
+  tags: aws-iot
+
+- block:
+  - name: "Download AWS IoT Device SDK for python"
+    git:
+      repo: https://github.com/aws/aws-iot-device-sdk-python.git
+      dest: /usr/local/src/aws-iot-device-sdk-python
+  - name: "Install AWS IoT Device SDK for python"
+    shell:
+      cmd: python3 setup.py install
+      chdir: /usr/local/src/aws-iot-device-sdk-python
+  when: not check_cdk.stat.exists
+  tags: aws-iot
+
+- block:
+  - name: "Create user credential dir" 
+    file: 
+      path: /home/{{ aws_config_user }}/certs
+      state: directory
+      owner: "{{ aws_config_user }}"
+  - name: "Copy AWS IoT Certs"
+    copy:
+      src: playbooks/linux_basic/raspbian/files/{{ item }}
+      dest: /home/{{ aws_config_user }}/certs/{{ item }}
+      owner: "{{ aws_config_user }}"
+      mode: 0600
+    with_items: "{{ aws_iot_certs }}"
+  tags: aws-iot
+
+# AWS SSM
+- name: "check ssm"
+  shell: /bin/grep "^aws_session_token =" /root/.aws/credentials
+  register: check_result
+  tags: aws-ssm
+
+- block:
+  - name: "Download SSM for raspbian"
+    get_url:
+      url: https://s3.ap-northeast-1.amazonaws.com/amazon-ssm-ap-northeast-1/latest/debian_arm/amazon-ssm-agent.deb
+      dest: /usr/local/src/amazon-ssm-agent.deb
+  - name: "Install SSM"
+    apt:
+      deb: /usr/local/src/amazon-ssm-agent.deb
+  - name: "Stop SSM agent"
+    systemd: 
+      name: amazon-ssm-agent
+      state: stopped
+      enabled: yes
+  - name: "Register SSM"
+    shell: amazon-ssm-agent -register -code "{{ aws_ssm_code }}" -id "{{ aws_ssm_id }}" -region "ap-northeast-1" -y
+    notify: 
+      - "Start SSM"
+  tags: aws-ssm
+  when: "'aws_session_token' not in check_result.stdout"
+
+# Apps
+
+- name: "Install python library"
+  pip:
+    name: "{{ app_add_packages }}"
+    executable: pip3
+  tags: app

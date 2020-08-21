@@ -1,0 +1,74 @@
+---
+
+apt_add_packages:
+  - task-japanese
+  - dnsutils
+  - git
+  - vim
+  - awscli
+  - iptables-persistent
+  - python3-pip
+  - python3-distutils
+  - python-picamera
+  - monit
+
+# {HubID[2]}{RoomID[2]}{AreaID[2]}{MachineID[3]}
+# add host_vars/hostname
+debian_hostname: "{{ ansible_hostname }}"
+
+ntp_servers: ntp.nict.jp
+
+ntp_pools: 0.jp.pool.ntp.org
+
+os_groups:
+  - name: opegrp
+    gid: 1001
+  - name: sshgrp
+    gid: 1002
+
+# add group_vars or host_vars
+# os_users:
+#   - name: username
+#     password: "{{ '******' | password_hash('sha512') }}"
+#     uid: 1001
+#     gid: opegrp
+#     sgid:
+#     - adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,spi,i2c,gpio,sshgrp
+#
+# user_update_password:
+#   - name: pi
+#     password: "{{ '******' | password_hash('sha512') }}"
+
+fw_accept_all_local: '192.168.11.0/24'
+
+fw_accept_out_tcp_ports:
+  - 80
+  - 444
+  - 53
+  - 8883
+
+fw_accept_out_udp_ports:
+  - 53
+  - 123
+
+ssh_allow_group: "sshgrp"
+
+# add group_vars or host_vars
+aws_config_user: pi
+aws_credential_user: awscli_credentials
+
+aws_iot_certs:
+  - aws_private.pem.key
+  - aws_public.pem.key
+  - aws_root_CA1.crt
+  - aws_certificate.pem.crt
+
+# add group_vars or host_vars
+#aws_ssm_code: 
+#aws_ssm_id: 
+
+app_add_packages:
+  - dotenv
+  - datetime
+  - picamera
+  - boto3

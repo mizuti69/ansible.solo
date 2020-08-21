@@ -1,6 +1,11 @@
 hosts/develop
 hosts/stage
 hosts/production
+host_vars/*
+group_vars/all
+group_vars/develop
+group_vars/production
+group_vars/stage
 .ssh/*
 ansible.cfg
 *.retry

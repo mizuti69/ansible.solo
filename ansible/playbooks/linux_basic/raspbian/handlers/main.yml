@@ -1,0 +1,16 @@
+---
+
+- name: Restart timesyncd
+  systemd:
+    name: systemd-timesyncd
+    state: restarted
+
+- name: Stop SSM
+  systemd: 
+    name: amazon-ssm-agent
+    state: stop
+
+- name: Start SSM
+  systemd:
+    name: amazon-ssm-agent
+    state: started
