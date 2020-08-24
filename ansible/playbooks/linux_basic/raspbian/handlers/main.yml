@@ -5,6 +5,9 @@
     name: systemd-timesyncd
     state: restarted
 
+- name: Save iptables rule
+  shell: /usr/sbin/netfilter-persistent save
+
 - name: Stop SSM
   systemd: 
     name: amazon-ssm-agent

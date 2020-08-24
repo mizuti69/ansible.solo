@@ -1,2 +1,5 @@
-files/aws*
+*.key
+*.pem
+*.crt
+aws*
 files/wpa_supplicant.conf

@@ -6,6 +6,7 @@ apt_add_packages:
   - git
   - vim
   - awscli
+  - nftables
   - iptables-persistent
   - python3-pip
   - python3-distutils
@@ -39,7 +40,9 @@ os_groups:
 #   - name: pi
 #     password: "{{ '******' | password_hash('sha512') }}"
 
-fw_accept_all_local: '192.168.11.0/24'
+fw_accept_all_local1: '10.0.0.0/8'
+fw_accept_all_local2: '172.16.0.0/12'
+fw_accept_all_local3: '192.168.0.0/16'
 
 fw_accept_out_tcp_ports:
   - 80

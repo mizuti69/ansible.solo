@@ -49,10 +49,10 @@
   tags: debian
 
 - name: "Systemd log level setting"
-  lineinfile:
+  replace:
     path: /etc/systemd/system.conf
-    regexp: '^#LogLevel='
-    line: LogLevel=notice
+    regexp: '^#LogLevel=info'
+    replace: LogLevel=notice
     backup: yes
   tags: debian
 
@@ -81,13 +81,13 @@
     - sgid
   tags: account
 
-- name: "chanege user password"
-  user:
-    name: "{{ item.name }}"
-    password: "{{ item.password }}"
-    update_password: on_create
-  with_items: "{{ user_update_password }}"
-  tags: account
+# - name: "chanege user password"
+#   user:
+#     name: "{{ item.name }}"
+#     password: "{{ item.password }}"
+#     update_password: on_create
+#   with_items: "{{ user_update_password }}"
+#   tags: account
 
 - name: "Sudo custom"
   copy:
@@ -108,8 +108,10 @@
     flush: yes
   with_items: [ 'INPUT', 'FORWARD', 'OUTPUT' ]
   tags: fw
+  notify:
+    - "Save iptables rule"
 
-- name:
+- name: "Accept ESTABLISHED"
   iptables:
     chain: "{{ item }}"
     ctstate: [ 'ESTABLISHED', 'RELATED' ]
@@ -142,11 +144,29 @@
     jump: ACCEPT
   tags: fw
 
-- name: "Accept local network all"
+- name: "Accept local network all 1"
   iptables:
     chain: "{{ item }}"
     ip_version: ipv4
-    source: "{{ fw_accept_all_local }}"
+    source: "{{ fw_accept_all_local1 }}"
+    jump: ACCEPT
+  with_items: [ 'INPUT', 'OUTPUT' ]
+  tags: fw
+
+- name: "Accept local network all 2"
+  iptables:
+    chain: "{{ item }}"
+    ip_version: ipv4
+    source: "{{ fw_accept_all_local2 }}"
+    jump: ACCEPT
+  with_items: [ 'INPUT', 'OUTPUT' ]
+  tags: fw
+
+- name: "Accept local network all 3"
+  iptables:
+    chain: "{{ item }}"
+    ip_version: ipv4
+    source: "{{ fw_accept_all_local3 }}"
     jump: ACCEPT
   with_items: [ 'INPUT', 'OUTPUT' ]
   tags: fw
@@ -215,20 +235,20 @@
 
 # ntp
 - name: "Set ntp server"
-  lineinfile:
+  replace:
     path: /etc/systemd/timesyncd.conf
     regexp: '^#NTP='
-    line: NTP={{ ntp_servers }}
+    replace: NTP={{ ntp_servers }}
     backup: yes
   tags: ntp
   notify: 
     - "Restart timesyncd"
 
 - name: "Set fallback ntp server"
-  lineinfile:
+  replace:
     path: /etc/systemd/timesyncd.conf
     regexp: '^#FallbackNTP='
-    line: FallbackNTP={{ ntp_pools }}
+    replace: FallbackNTP={{ ntp_pools }}
     backup: yes
   tags: ntp
   notify: 
@@ -245,10 +265,10 @@
   tags: ssh
 
 - name: "Ssh PermitRootLogin no"
-  lineinfile:
+  replace:
     path: /etc/ssh/sshd_config
     regexp: '^#PermitRootLogin prohibit-password'
-    line: 'PermitRootLogin no'
+    replace: 'PermitRootLogin no'
     backup: yes
   tags: ssh
 
@@ -329,7 +349,7 @@
   when: not user_credential.stat.exists
 
 # AWS IoT Core
-- name: "check cdk"
+- name: "check sdk"
   stat: 
     path: /usr/local/lib/python3.7/dist-packages/AWSIoTPythonSDK
   register: check_cdk
@@ -365,6 +385,7 @@
 # AWS SSM
 - name: "check ssm"
   shell: /bin/grep "^aws_session_token =" /root/.aws/credentials
+  ignore_errors: yes
   register: check_result
   tags: aws-ssm
 
