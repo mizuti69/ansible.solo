@@ -29,8 +29,3 @@
 #  hosts: develop
 #  roles:
 #    - dev_setting
-- name: "OS default Settings"
-  become: yes
-  hosts: develop
-  roles:
-    - basic-role
